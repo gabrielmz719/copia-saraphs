@@ -18,6 +18,14 @@ const personagem = {
   forcaPulo: 15,
 };
 
+let mouse = { x: 0, y: 0 };
+const projeteis = [];
+const velocidadeProjetil = 8;
+const intervaloDisparo = 500; // a cada 200ms (0.2s)
+
+const explosoes = []
+
+
 // Função para gerar uma escada (lado direito ou esquerdo)
 function criarEscada(xStart, yStart, degraus, paraDireita = true) {
   for (let i = 0; i < degraus; i++) {
@@ -36,6 +44,7 @@ function criarEscada(xStart, yStart, degraus, paraDireita = true) {
     }
   }
 }
+
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -121,6 +130,146 @@ function resolverColisao(personagem, bloco) {
   }
 }
 
+canvas.addEventListener('mousemove', (e) => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+function criarProjetil() {
+  const origemX = personagem.x + personagem.size / 2;
+  const origemY = personagem.y + personagem.size / 2;
+
+  const dx = mouse.x - origemX;
+  const dy = mouse.y - origemY;
+  const distancia = Math.sqrt(dx * dx + dy * dy);
+
+  const direcaoX = dx / distancia;
+  const direcaoY = dy / distancia;
+
+  projeteis.push({
+    x: origemX,
+    y: origemY,
+    dx: direcaoX,
+    dy: direcaoY,
+    size: 6,
+  });
+}
+
+setInterval(criarProjetil, intervaloDisparo);
+
+function atualizarProjeteis() {
+  for (let i = projeteis.length - 1; i >= 0; i--) {
+    const p = projeteis[i];
+    p.x += p.dx * velocidadeProjetil;
+    p.y += p.dy * velocidadeProjetil;
+
+    // Se sair da tela, remove
+    if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+      projeteis.splice(i, 1);
+      continue;
+    }
+
+    // Colisão com blocos
+    for (const bloco of blocos) {
+      if (
+        p.x < bloco.x + bloco.width &&
+        p.x + p.size > bloco.x &&
+        p.y < bloco.y + bloco.height &&
+        p.y + p.size > bloco.y
+      ) {
+        projeteis.splice(i, 1);
+        break;
+      }
+    }
+  }
+}
+
+function drawProjeteis() {
+  ctx.fillStyle = 'yellow';
+  projeteis.forEach((p) => {
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  });
+}
+
+function criarExplosao(x, y) {
+  const particulas = [];
+  const quantidade = 20;
+
+  for (let i = 0; i < quantidade; i++) {
+    const angulo = Math.random() * 2 * Math.PI;
+    const velocidade = Math.random() * 4 + 2;
+
+    particulas.push({
+      x: x,
+      y: y,
+      dx: Math.cos(angulo) * velocidade,
+      dy: Math.sin(angulo) * velocidade,
+      tamanho: Math.random() * 3 + 2,
+      vida: 1, // começa com opacidade 1
+    });
+  }
+
+  explosoes.push(particulas);
+}
+
+function atualizarExplosoes() {
+  for (let i = explosoes.length - 1; i >= 0; i--) {
+    const particulas = explosoes[i];
+
+    for (const p of particulas) {
+      p.x += p.dx;
+      p.y += p.dy;
+      p.dy += 0.05; // gravidade
+      p.vida -= 0.02; // vai desaparecendo
+    }
+
+    // Remove explosão se todas as partículas sumirem
+    if (particulas.every(p => p.vida <= 0)) {
+      explosoes.splice(i, 1);
+    }
+  }
+}
+
+function drawExplosoes() {
+  explosoes.forEach(particulas => {
+    particulas.forEach(p => {
+      ctx.fillStyle = `rgba(255, 200, 0, ${p.vida})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.tamanho, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+}
+function atualizarProjeteis() {
+  for (let i = projeteis.length - 1; i >= 0; i--) {
+    const p = projeteis[i];
+    p.x += p.dx * velocidadeProjetil;
+    p.y += p.dy * velocidadeProjetil;
+
+    // Remove o projétil se sair da tela
+    if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+      projeteis.splice(i, 1);
+      continue;
+    }
+
+    // Verifica colisão com cada bloco
+    for (const bloco of blocos) {
+      if (
+        p.x < bloco.x + bloco.width &&
+        p.x + p.size > bloco.x &&
+        p.y < bloco.y + bloco.height &&
+        p.y + p.size > bloco.y
+      ) {
+        criarExplosao(p.x, p.y);     // 💥 Cria a explosão no ponto de colisão
+        projeteis.splice(i, 1);      // Remove o projétil
+        break;                      // Sai do loop dos blocos pra não tentar colidir mais vezes
+      }
+    }
+  }
+}
+
+
+
 function atualizarPersonagem() {
   personagem.velocidadeY += personagem.gravidade;
   personagem.y += personagem.velocidadeY;
@@ -141,9 +290,17 @@ blocos.forEach((bloco) => {
 
 function loop() {
   atualizarPersonagem();
+  atualizarProjeteis();
+  atualizarExplosoes();
+
   draw();
+  drawProjeteis();
+  drawExplosoes();
+
   requestAnimationFrame(loop);
 }
+
+
 
 window.addEventListener('resize', () => {
   resizeCanvas();
