@@ -52,8 +52,38 @@ const personagem = {
   forcaPulo: 15,
   vidaMaxima: 100,
   vidaAtual: 100,
-  visivel: true
+  visivel: true,
+  vidas: vidasIniciais,
+
+  
+  // 🔹 Propriedades do escudo:
+  escudo: false,
+  escudoDuracao: 3000, // ms
+  tempoEscudoAtivado: 0
 };
+
+const upgrades = [
+  {
+    nome: 'Escudo',
+    descricao: 'Gera um escudo a cada 2 segundos',
+    aplicar: () => ativarEscudo()
+  },
+  {
+    nome: 'Tiro Seguinte',
+    descricao: 'Projéteis seguem inimigos',
+    aplicar: () => ativarTiroSeguidor()
+  },
+  {
+    nome: 'Velocidade do Tiro',
+    descricao: 'Aumenta a velocidade dos projéteis',
+    aplicar: () => aumentarVelocidadeTiro()
+  }
+];
+
+let upgradesDisponiveis = [];
+let upgradeSelecionado = null;
+let mostrandoUpgrades = false;
+
 
 // Controle do mouse
 const mouse = { x: 0, y: 0 };
@@ -123,6 +153,13 @@ function criarEscada(xStart, yStart, degraus, paraDireita = true) {
     }
   }
 }
+function ativarGameOver() {
+  if (!gameOverAtivo) {
+    gameOverAtivo = true;
+    tempoGameOver = Date.now();
+    gameOver = true;
+  }
+}
 
 function criarInimigos(quantidade, velocidade = 2) {
   for (let i = 0; i < quantidade; i++) {
@@ -147,27 +184,55 @@ function criarInimigos(quantidade, velocidade = 2) {
 
 // ======= Event Handlers =======
 function setupEventListeners() {
-  canvas.addEventListener('mousemove', (e) => {
+  canvas.addEventListener('click', (e) => {
+    if (mostrandoUpgrades) {
+      const larguraCarta = 150;
+      const alturaCarta = 200;
+      const espacamento = 50;
+      const totalLargura = larguraCarta * 3 + espacamento * 2;
+      const startX = (canvas.width - totalLargura) / 2;
+      const y = canvas.height / 2 - alturaCarta / 2;
+
+      for (let i = 0; i < upgradesDisponiveis.length; i++) {
+        const x = startX + i * (larguraCarta + espacamento);
+        if (
+          e.clientX >= x && e.clientX <= x + larguraCarta &&
+          e.clientY >= y && e.clientY <= y + alturaCarta
+        ) {
+          upgradeSelecionado = upgradesDisponiveis[i];
+          upgradeSelecionado.aplicar();
+          mostrandoUpgrades = false;
+          iniciarFase(faseAtual);
+          break;
+        }
+      }
+    }
+  });
+
+  // ====> Adicione isso para capturar o teclado
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyA') {
+      personagem.velocidadeX = -personagem.velocidadeMovimento;
+    }
+    if (e.code === 'KeyD') {
+      personagem.velocidadeX = personagem.velocidadeMovimento;
+    }
+    if (e.code === 'KeyW' && personagem.noChao) {
+      personagem.velocidadeY = -personagem.forcaPulo;
+    }
+    if (e.code === 'KeyR' && gameOver) {
+      reiniciarJogo();
+    }
+  });
+  window.addEventListener('mousemove', (e) => {
     mouse.x = e.clientX;
     mouse.y = e.clientY;
   });
 
-  window.addEventListener('resize', () => {
-    resizeCanvas();
-    draw();
-  });
-
-  window.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
-    if (key === 'a') personagem.velocidadeX = -personagem.velocidadeMovimento;
-    if (key === 'd') personagem.velocidadeX = personagem.velocidadeMovimento;
-    if (key === 'w' && personagem.noChao) personagem.velocidadeY = -personagem.forcaPulo;
-    if (gameOver && key === 'r') reiniciarJogo();
-  });
-
   window.addEventListener('keyup', (e) => {
-    const key = e.key.toLowerCase();
-    if (key === 'a' || key === 'd') personagem.velocidadeX = 0;
+    if (e.code === 'KeyA' || e.code === 'KeyD') {
+      personagem.velocidadeX = 0;
+    }
   });
 }
 
@@ -233,14 +298,57 @@ function atualizarInimigos() {
   });
 }
 
+let escudoAtivo = false;
+let escudoIntervalo;
+
+function ativarEscudo() {
+  escudoAtivo = true;
+  if (escudoIntervalo) clearInterval(escudoIntervalo);
+
+  escudoIntervalo = setInterval(() => {
+    personagem.escudo = true;
+    personagem.tempoEscudoAtivado = Date.now();
+    setTimeout(() => {
+      personagem.escudo = false;
+    }, personagem.escudoDuracao);
+  }, 2000);
+}
+
+let tiroSeguidorAtivo = false;
+
+function ativarTiroSeguidor() {
+  tiroSeguidorAtivo = true;
+}
+
+function aumentarVelocidadeTiro() {
+  velocidadeProjetil += 2; // aumenta a velocidade
+}
+
 // ======= Sistema de Projéteis =======
 function criarProjetil() {
   if (gameOver || faseCompleta) return;
 
   const origemX = personagem.x + personagem.size / 2;
   const origemY = personagem.y + personagem.size / 2;
-  const dx = mouse.x - origemX;
-  const dy = mouse.y - origemY;
+
+  let dx, dy;
+
+  if (tiroSeguidorAtivo && inimigos.length > 0) {
+    // Segue o inimigo mais próximo (exemplo simples)
+    let inimigoAlvo = inimigos.reduce((maisProximo, inimigo) => {
+      const distAtual = Math.hypot((personagem.x - inimigo.x), (personagem.y - inimigo.y));
+      const distMaisProximo = Math.hypot((personagem.x - maisProximo.x), (personagem.y - maisProximo.y));
+      return distAtual < distMaisProximo ? inimigo : maisProximo;
+    }, inimigos[0]);
+
+    dx = inimigoAlvo.x + inimigoAlvo.width / 2 - origemX;
+    dy = inimigoAlvo.y + inimigoAlvo.height / 2 - origemY;
+  } else {
+    // ⚠️ Aqui estava o erro antes: o mouse precisa ser relativo ao canvas
+    dx = mouse.x - origemX;
+    dy = mouse.y - origemY;
+  }
+
   const distancia = Math.sqrt(dx * dx + dy * dy);
 
   projeteis.push({
@@ -270,6 +378,18 @@ function criarProjetilInimigo(inimigo) {
 
 function atualizarProjeteis() {
   atualizarListaProjeteis(projeteis, (p, i) => {
+    if (personagem.vidaAtual <= 0) {
+      personagem.vidas--;
+      personagem.vidaAtual = personagem.vidaMaxima;
+
+      if (personagem.vidas <= 0) {
+        ativarGameOver();
+      } else {
+        piscarPersonagem();
+      }
+    } else {
+      piscarPersonagem();
+    }
     for (let j = inimigos.length - 1; j >= 0; j--) {
       const inimigo = inimigos[j];
       if (colisaoProjetilObjeto(p, inimigo)) {
@@ -465,15 +585,23 @@ function verificarColisoesEntreProjeteis() {
     }
   }
 }
+function mostrarUpgrades() {
+  mostrandoUpgrades = true;
+  // Pega os 3 upgrades para mostrar (pode embaralhar se quiser)
+  upgradesDisponiveis = [...upgrades];
+  // Para o game loop enquanto escolhe
+  // Aqui, não chamamos iniciarFase ainda
+}
 
 function avancarFase() {
   faseAtual++;
   if (faseAtual < fases.length) {
-    setTimeout(() => iniciarFase(faseAtual), 2000);
+    mostrarUpgrades();
   } else {
-    gameOver = true;
+    gameOver = true; // venceu
   }
 }
+
 
 function reiniciarJogo() {
   faseAtual = 0;
@@ -549,7 +677,7 @@ function verificarColisaoPersonagemInimigos() {
           personagem.vidaAtual = personagem.vidaMaxima;
 
           if (personagem.vidas <= 0) {
-            gameOver = true;
+            ativarGameOver();
           }
         }
       }
@@ -607,6 +735,38 @@ function draw() {
     ctx.fillStyle = 'lime';
     ctx.fillRect(personagem.x, personagem.y - 15, vidaWidth, 5);
   }
+  if (mostrandoUpgrades) {
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = 'white';
+    ctx.font = '30px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Escolha seu upgrade', canvas.width / 2, 100);
+
+    // mostra as 3 cartas no centro da tela
+    const larguraCarta = 150;
+    const alturaCarta = 200;
+    const espacamento = 50;
+    const totalLargura = larguraCarta * 3 + espacamento * 2;
+    const startX = (canvas.width - totalLargura) / 2;
+    const y = canvas.height / 2 - alturaCarta / 2;
+
+    upgradesDisponiveis.forEach((upgrade, i) => {
+      const x = startX + i * (larguraCarta + espacamento);
+
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(x, y, larguraCarta, alturaCarta);
+
+      ctx.fillStyle = 'white';
+      ctx.font = '20px Arial';
+      ctx.fillText(upgrade.nome, x + larguraCarta / 2, y + 40);
+      ctx.font = '14px Arial';
+      ctx.fillText(upgrade.descricao, x + larguraCarta / 2, y + 80, larguraCarta - 20);
+    });
+
+    ctx.textAlign = 'left';
+  }
 
   explosoes.forEach(particulas => {
     particulas.forEach(p => {
@@ -638,19 +798,19 @@ function draw() {
   ctx.fillText(`Vida: ${Math.max(0, personagem.vidaAtual)}/${personagem.vidaMaxima}`, 20, 90);
 
 
-  if (gameOver) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+ if (gameOver) {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = 'white';
-    ctx.font = '40px Arial';
-    ctx.textAlign = 'center';
-    const mensagem = faseAtual >= fases.length ? 'Você Venceu!' : 'Game Over';
-    ctx.fillText(mensagem, canvas.width / 2, canvas.height / 2 - 40);
-    ctx.font = '20px Arial';
-    ctx.fillText('Pressione R para reiniciar', canvas.width / 2, canvas.height / 2 + 20);
-    ctx.textAlign = 'left';
-  }
+  ctx.fillStyle = 'white';
+  ctx.font = '40px Arial';
+  ctx.textAlign = 'center';
+  const mensagem = faseAtual >= fases.length ? 'Você Venceu!' : 'Game Over';
+  ctx.fillText(mensagem, canvas.width / 2, canvas.height / 2 - 40);
+  ctx.font = '20px Arial';
+  ctx.fillText('Pressione R para reiniciar', canvas.width / 2, canvas.height / 2 + 20);
+  ctx.textAlign = 'left';
+}
 }
 
 // ======= Loop Principal =======
@@ -665,8 +825,7 @@ function loop() {
     gameLoop = requestAnimationFrame(loop);
   } else {
     draw();
-    
-    // Verifica se é hora de reiniciar
+
     if (gameOverAtivo && Date.now() - tempoGameOver > delayReinicio) {
       reiniciarJogo();
     } else {
