@@ -1,19 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena de Sobrevivência - Edição Aprimorada</title>
     <link rel="stylesheet" href="style.css">
-    <title>Cópia do Saraphs</title>
 </head>
 <body>
-    <header>
+    <!-- Sobreposição da UI do Jogo -->
+    <div id="gameUI" class="game-ui">
+        <div class="ui-top">
+            <div class="ui-left">
+                <div class="stat-item">
+                    <span class="stat-label">Onda</span>
+                    <span id="waveDisplay" class="stat-value">1/5</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Vidas</span>
+                    <span id="livesDisplay" class="stat-value">3</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Vida</span>
+                    <span id="healthDisplay" class="stat-value">100/100</span>
+                </div>
+            </div>
+            <div class="ui-center">
+                <div class="xp-bar-container">
+                    <div id="xpBar" class="xp-bar">
+                        <div id="xpFill" class="xp-fill"></div>
+                    </div>
+                    <span id="xpText" class="xp-text">XP: 0/100</span>
+                </div>
+            </div>
+            <div class="ui-right">
+                <div class="stat-item">
+                    <span class="stat-label">Tempo</span>
+                    <span id="timeDisplay" class="stat-value">00:00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Mortes</span>
+                    <span id="killsDisplay" class="stat-value">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Exibição de Melhorias Ativas -->
+        <div id="activeUpgrades" class="active-upgrades"></div>
+        
+        <!-- Menu de Pausa -->
+        <div id="pauseMenu" class="pause-menu hidden">
+            <div class="pause-content">
+                <h2>Jogo Pausado</h2>
+                <p>Pressione P para continuar</p>
+                <div class="controls-info">
+                    <h3>Controles:</h3>
+                    <p><strong>A/D</strong> - Mover esquerda/direita</p>
+                    <p><strong>W</strong> - Pular</p>
+                    <p><strong>Mouse</strong> - Mirar e atirar</p>
+                    <p><strong>P</strong> - Pausar/Continuar</p>
+                    <p><strong>R</strong> - Reiniciar (quando fim de jogo)</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    </header>
-    <main>
-         <canvas id="gameCanvas"></canvas>
-    </main>
-    <footer></footer>
-    <script src="script.js"></script>
+    <!-- Canvas do Jogo -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Scripts -->
+    <script src="js/gameState.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/projectiles.js"></script>
+    <script src="js/upgrades.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/gameLoop.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
