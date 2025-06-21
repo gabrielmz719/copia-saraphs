@@ -19,7 +19,7 @@ function createPlayer() {
         jumpForce: 16,
         maxHealth: 100,
         health: 100,
-        lives: 3,
+        lives: 1,
         visible: true,
         invulnerable: false,
         lastDamageTime: 0,
@@ -45,7 +45,7 @@ function createEnemy(x, targetY, wave) {
         health: 40 + GameState.currentWave * 15,
         lastShootTime: 0,
         shootInterval: wave.enemyShootInterval + Math.random() * 500,
-        type: Math.random() < 0.3 ? 'fast' : 'normal', // 30% chance for fast enemy
+        type: Math.random() < 0.7 ? 'fast' : 'normal', // 30% chance for fast enemy
         color: Math.random() < 0.3 ? '#ff4444' : '#cc2222'
     };
 }

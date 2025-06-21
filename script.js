@@ -19,7 +19,10 @@ const fases = [
   { inimigos: 3, velocidadeInimigos: 2.5, intervaloDisparoInimigos: 1200, corFundo: '#111122' },
   { inimigos: 4, velocidadeInimigos: 3, intervaloDisparoInimigos: 1000, corFundo: '#221111' },
   { inimigos: 5, velocidadeInimigos: 3.5, intervaloDisparoInimigos: 800, corFundo: '#112211' },
-  { inimigos: 6, velocidadeInimigos: 4, intervaloDisparoInimigos: 600, corFundo: '#222211' }
+  { inimigos: 6, velocidadeInimigos: 4, intervaloDisparoInimigos: 600, corFundo: '#5263' },
+  { inimigos: 7, velocidadeInimigos: 4, intervaloDisparoInimigos: 600, corFundo: '#222211' },
+  { inimigos: 8, velocidadeInimigos: 4, intervaloDisparoInimigos: 600, corFundo: '#222211' },
+  { inimigos: 9, velocidadeInimigos: 4, intervaloDisparoInimigos: 600, corFundo: '#222211' },
 ];
 
 // Estado do jogo
@@ -55,7 +58,7 @@ const personagem = {
   visivel: true,
   vidas: vidasIniciais,
 
-  
+
   // 🔹 Propriedades do escudo:
   escudo: false,
   escudoDuracao: 3000, // ms
@@ -798,19 +801,19 @@ function draw() {
   ctx.fillText(`Vida: ${Math.max(0, personagem.vidaAtual)}/${personagem.vidaMaxima}`, 20, 90);
 
 
- if (gameOver) {
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (gameOver) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = 'white';
-  ctx.font = '40px Arial';
-  ctx.textAlign = 'center';
-  const mensagem = faseAtual >= fases.length ? 'Você Venceu!' : 'Game Over';
-  ctx.fillText(mensagem, canvas.width / 2, canvas.height / 2 - 40);
-  ctx.font = '20px Arial';
-  ctx.fillText('Pressione R para reiniciar', canvas.width / 2, canvas.height / 2 + 20);
-  ctx.textAlign = 'left';
-}
+    ctx.fillStyle = 'white';
+    ctx.font = '40px Arial';
+    ctx.textAlign = 'center';
+    const mensagem = faseAtual >= fases.length ? 'Você Venceu!' : 'Game Over';
+    ctx.fillText(mensagem, canvas.width / 2, canvas.height / 2 - 40);
+    ctx.font = '20px Arial';
+    ctx.fillText('Pressione R para reiniciar', canvas.width / 2, canvas.height / 2 + 20);
+    ctx.textAlign = 'left';
+  }
 }
 
 // ======= Loop Principal =======
